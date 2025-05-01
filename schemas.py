@@ -1,13 +1,13 @@
 from typing import Optional
 from datetime import datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
 
 from database.models import RoleEnum
 
 class UserBase(BaseModel):
-    email: str
-    password: str
+    email: EmailStr
+    password_hash: str
 
     class Config:
         from_attributes = True

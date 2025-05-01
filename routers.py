@@ -8,18 +8,18 @@ from repository import AuthRepository
 
 router = APIRouter()
 
-@router.post("auth/register")
+@router.post("/auth/register")
 async def create_user(
     user: UserCreate = Depends(),
     session: AsyncSession = Depends(get_db)
 ):
-    new_user_id = await AuthRepository.add_user(user)
-    return new_user_id
+    new_user_id = await AuthRepository.add_user(user, session)
+    return {"user_id": new_user_id}
 
-@router.post("auth/login")
+@router.post("/auth/login")
 async def create_token():
     pass
 
-@router.post("auth/verify_token")
+@router.post("/auth/verify_token")
 async def verify_token():
     pass
