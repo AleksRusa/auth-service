@@ -5,17 +5,18 @@ from pydantic import BaseModel, EmailStr
 
 from database.models import RoleEnum
 
-class UserBase(BaseModel):
+class UserAuth(BaseModel):
     email: EmailStr
-    password_hash: str
+    password: str
 
     class Config:
         from_attributes = True
 
-class UserCreate(UserBase):
+class UserCreate(UserAuth):
     pass
 
-class UserRead(UserBase):
+class UserRead(UserAuth):
+    id: int
     role: RoleEnum
     balance: float
     created_at: datetime

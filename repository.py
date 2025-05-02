@@ -1,8 +1,8 @@
-from sqlalchemy import insert
+from sqlalchemy import select, insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database.models import Users
-from schemas import UserCreate
+from schemas import UserCreate, UserRead
 
 class AuthRepository:
     @classmethod
@@ -12,4 +12,10 @@ class AuthRepository:
         result = await session.execute(query)
         await session.commit()
         user_id = result.scalar_one()
-        return user_id
+        return {"message": "Вы успешно зарегистрированы"}
+    @classmethod
+    async def find_user(cls, email: str, session: AsyncSession):
+        query = select(Users).where(Users.email==email)
+        result = await session.execute(query)
+        user = result.scalar_one_or_none()
+        return UserRead.model_validate(user)
