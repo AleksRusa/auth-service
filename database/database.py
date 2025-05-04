@@ -3,10 +3,12 @@ import os
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from sqlalchemy.orm import DeclarativeBase 
 
+from database.config import settings
+
 class Base(DeclarativeBase):
     pass
 
-DATABASE_URL=os.getenv("AUTH_DATABASE_URL")
+DATABASE_URL=os.getenv("AUTH_DATABASE_URL") or settings.AUTH_DATABASE_URL
 
 async_engine = create_async_engine(url=DATABASE_URL, echo=False)
 

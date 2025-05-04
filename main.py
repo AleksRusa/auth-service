@@ -6,9 +6,6 @@ from fastapi import FastAPI
 from routers import router as auth_router
 from database.database import create_tables, delete_tables
 
-#добавить создание таблиц
-#добавить развертку через docker-conmpose
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await create_tables()
@@ -19,7 +16,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
-app.include_router(auth_router)
+app.include_router(auth_router, prefix="/auth", tags=["auth-service"])
 
 
 if __name__ == "__main__":

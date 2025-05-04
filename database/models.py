@@ -18,7 +18,7 @@ class Users(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     email: Mapped[str] = mapped_column(unique=True)
-    password_hash: Mapped[str] = mapped_column(nullable=False)
+    password: Mapped[str] = mapped_column(nullable=False)
     role: Mapped[RoleEnum] = mapped_column(Enum(RoleEnum), default=RoleEnum.USER, nullable=False)
     balance: Mapped[float] = mapped_column(Numeric(10, 2), default=0.0)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
