@@ -3,9 +3,11 @@ from typing import Optional
 from fastapi import APIRouter, Depends, Response, HTTPException, status, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
+from fastapi_cache.decorator import cache
 
 from database.models import AccountStatus
 from database.database import get_db
+from config.logger import db_logger, db_error_logger, api_logger, api_error_logger
 from schemas import UserCreate, UserAuth, UserUpdate
 from repository import AuthRepository
 from auth import (
@@ -26,6 +28,7 @@ async def create_user(
 ):
     existed_user = await AuthRepository.find_user_by_email(user.email, session)
     if existed_user:
+        api_error_logger.error(f"trying to create user with existing email - {user.email}")
         raise HTTPException(status_code=400, detail="user with this email already exists")
     new_user = await AuthRepository.add_user(user, session)
     # TODO: раскомментировать логику создания токена при регистрации
@@ -44,6 +47,7 @@ async def create_tokens(response: Response, user_data: UserAuth, session: AsyncS
     refresh_token = await create_refresh_token({"sub": str(user.id)})
     await set_token_cookie(response, TokenType.ACCESS, access_token)
     await set_token_cookie(response, TokenType.REFRESH, refresh_token)
+    api_logger.info(f"user {user_data.email} logged in")
     return {'access_token': access_token, 'refresh_token': refresh_token}
 
 @router.post("/logout")
@@ -60,6 +64,7 @@ async def refresh_token(request: Request, response: Response, session: AsyncSess
     return {'new_access_token': new_access_token}
 
 @router.get("/user_info/")
+@cache(expire=300)
 async def get_user_info(request: Request, user_id: Optional[int] = None, session: AsyncSession = Depends(get_db)):
     if user_id:
         admin_user = await get_current_admin_user(request, session)
@@ -79,16 +84,17 @@ async def update_user_info(
     # проверка прав на изменение пользователя
     if user_id:
         admin_user = await get_current_admin_user(request, session)
+        user = await AuthRepository.find_user_by_id(user_id, session)
+    else:
     # проверка существования пользователя
-    check_user_exists = await AuthRepository.find_user_by_id(user_id, session)
-    if not check_user_exists:
-        raise HTTPException(status_code=404, detail="user not found")
+        user  = await get_current_user(request, TokenType.ACCESS, session)
     # если email уже существует
     if user_update_data.email:
         existed_user = await AuthRepository.find_user_by_email(user_update_data.email, session)
     if existed_user:
+        api_error_logger.error(f"email - {existed_user.email} already exists")
         raise HTTPException(status_code=400, detail="email already exists")
-    new_user_data = await AuthRepository.update_user(user_id, user_update_data, session)
+    new_user_data = await AuthRepository.update_user(user.id, user_update_data, session)
     return new_user_data
 
 # banned может сделать только admin
@@ -101,9 +107,13 @@ async def delete_user(
     ):
     if status == AccountStatus.BANNED or user_id:
         admin_user = await get_current_admin_user(request, session)
-        if status == AccountStatus.BANNED:
+        if status == AccountStatus.BANNED and (not user_id or user_id == admin_user.id):
             raise HTTPException(status_code=403, detail="you can not ban yourselt")
-    user = await get_current_user(request, TokenType.ACCESS, session)
-    new_user_data = await AuthRepository.update_account_status(user.id, status, session)
+    else:
+        user = await get_current_user(request, TokenType.ACCESS, session)
+        user_id = user.id
+    new_user_data = await AuthRepository.update_account_status(user_id, status, session)
     return new_user_data
+
+# TODO: добавить GET /users/all endpoint для admin
     
