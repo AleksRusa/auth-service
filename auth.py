@@ -27,7 +27,10 @@ def create_token_factory(expire: timedelta):
         to_encode = data.copy()
         token_expire = datetime.now(timezone.utc) + expire
         to_encode.update({"exp": token_expire})
+        # TODO: реализовать зранение секретов
         auth_data = get_auth_data()
+        if not auth_data or 'secret_key' not in auth_data or 'algorithm' not in auth_data:
+            raise ValueError("Auth data must contain 'secret_key' and 'algorithm'")
         encode_jwt = jwt.encode(to_encode, auth_data['secret_key'], algorithm=auth_data['algorithm'])
         return encode_jwt
     return create_token
@@ -51,7 +54,7 @@ async def authenticate_user(email: EmailStr, password: str, session: AsyncSessio
 async def get_token(request: Request, token_type: TokenType):
     token = request.cookies.get(f'user_{token_type.value}_token')
     if not token:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Авторизуйтесь")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f"{token_type.value}_token is not found")
     return token
 
 async def get_current_user(request: Request, token_type: TokenType, session: AsyncSession):
@@ -69,13 +72,13 @@ async def get_current_user(request: Request, token_type: TokenType, session: Asy
     
     user_id = payload.get('sub')
     if not user_id:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='User_id is not found')
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='User_id is not found')
     user = await AuthRepository.find_user_by_id(int(user_id), session)
     if not user:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='User not found')
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='User not found')
     return user
 
-#проверить правильно ли указана праверка на роль пользователя
+# admin can ban users
 # async def get_current_admin_user(request: Request):
 #     current_user = get_current_user(request, token_type = TokenType.ACCESS, session)
 #     if current_user.role == "ADMIN":

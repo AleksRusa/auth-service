@@ -3,7 +3,7 @@ from datetime import datetime
 
 from pydantic import BaseModel, EmailStr
 
-from database.models import RoleEnum
+from database.models import RoleEnum, AccountStatus
 
 class UserAuth(BaseModel):
     email: EmailStr
@@ -17,7 +17,13 @@ class UserCreate(UserAuth):
 
 class UserRead(UserAuth):
     id: int
-    role: RoleEnum
     balance: float
+    role: RoleEnum
+    status: AccountStatus
     created_at: datetime
+
+class UserUpdate(UserAuth):
+    email: Optional[EmailStr]
+    password: Optional[str]
+    
 

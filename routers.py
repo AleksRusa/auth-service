@@ -1,8 +1,10 @@
 from fastapi import APIRouter, Depends, Response, HTTPException, status, Request
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.exc import IntegrityError
 
+from database.models import AccountStatus
 from database.database import get_db
-from schemas import UserCreate, UserAuth
+from schemas import UserCreate, UserAuth, UserUpdate
 from repository import AuthRepository
 from auth import (
     authenticate_user, 
@@ -19,6 +21,9 @@ async def create_user(
     user: UserCreate,
     session: AsyncSession = Depends(get_db)
 ):
+    existed_user = await AuthRepository.find_user_by_email(user.email, session)
+    if existed_user:
+        raise HTTPException(status_code=400, detail="user with this email already exists")
     new_user = await AuthRepository.add_user(user, session)
     access_token = await create_access_token({"sub": str(new_user.id), "role": str(new_user.role)})
     refresh_token = await create_refresh_token({"sub": str(new_user.id)})
@@ -49,4 +54,29 @@ async def refresh_token(request: Request, response: Response, session: AsyncSess
     new_access_token = await create_access_token({"sub": str(user_from_token.id), "role": user_from_token.role})
     await set_token_cookie(response, TokenType.ACCESS, new_access_token)
     return {'new_access_token': new_access_token}
+
+@router.get("/user_info/{user_id}")
+async def get_user_info(request: Request, session: AsyncSession = Depends(get_db)):
+    user = await get_current_user(request, TokenType.ACCESS, session)
+    return user
+
+# fix endpoint
+@router.patch("/update_user/{user_id}")
+async def update_user_info(request: Request, user_update_data: UserUpdate, session: AsyncSession = Depends(get_db)):
+    user = await get_current_user(request, TokenType.ACCESS, session)
+    user_id = user.id
+    if user_update_data.email:
+        existed_user = await AuthRepository.find_user_by_email(user_update_data.email, session)
+    if existed_user:
+        raise HTTPException(status_code=400, detail="email already exists")
+    new_user_data = await AuthRepository.update_user(user_id, user_update_data, session)
+    return new_user_data
+
+# banned может сделать только admin
+@router.patch("/update/account_status/{user_id}")
+async def delete_user(request: Request, status: AccountStatus, session: AsyncSession = Depends(get_db)):
+    user = await get_current_user(request, TokenType.ACCESS, session)
+    user_id = user.id
+    new_user_data = await AuthRepository.update_account_status(user_id, status, session)
+    return new_user_data
     
