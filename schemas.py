@@ -15,6 +15,9 @@ class UserAuth(BaseModel):
 class UserCreate(UserAuth):
     pass
 
+class CreateAdminUser(UserAuth):
+    role: RoleEnum
+
 class UserRead(UserAuth):
     id: int
     balance: float
@@ -25,5 +28,7 @@ class UserRead(UserAuth):
 class UserUpdate(UserAuth):
     email: Optional[EmailStr]
     password: Optional[str]
+
+
     
 

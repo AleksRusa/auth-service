@@ -8,7 +8,7 @@ from pydantic import EmailStr
 from fastapi import Depends, Request, HTTPException, status, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from database.config import get_auth_data
+from config.config import get_auth_data
 from repository import AuthRepository
 from database.database import get_db
 from schemas import UserRead
@@ -79,9 +79,9 @@ async def get_current_user(request: Request, token_type: TokenType, session: Asy
     return user
 
 # admin can ban users
-# async def get_current_admin_user(request: Request):
-#     current_user = get_current_user(request, token_type = TokenType.ACCESS, session)
-#     if current_user.role == "ADMIN":
-#         return current_user
-#     raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="У вас недостаточно прав доступа")
+async def get_current_admin_user(request: Request, session: AsyncSession):
+    current_user = await get_current_user(request, TokenType.ACCESS, session)
+    if current_user.role == "admin":
+        return current_user
+    raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="У вас недостаточно прав доступа")
     

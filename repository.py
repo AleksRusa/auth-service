@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from passlib.context import CryptContext
 
 from database.models import Users, AccountStatus
-from schemas import UserCreate, UserRead, UserUpdate
+from schemas import UserCreate, UserRead, UserUpdate, CreateAdminUser
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -33,7 +33,9 @@ class AuthRepository:
         query = select(Users).where(Users.id==id)
         result = await session.execute(query)
         user = result.scalar_one_or_none()
-        return UserRead.model_validate(user)
+        if user:
+            return UserRead.model_validate(user)
+        raise HTTPException(status_code=404, detail="user not found")
     @classmethod
     async def update_user(cls, user_id: int, new_user_data: UserUpdate, session: AsyncSession) -> int:
         user_model = new_user_data.model_dump(exclude_unset=True)
@@ -57,4 +59,10 @@ class AuthRepository:
         updated_user = result.scalar_one_or_none()
         await session.commit()
         return updated_user
+    @classmethod
+    async def add_admin_user(cls, user: dict, session: AsyncSession) -> int:
+        user['password'] = get_password_hash(user['password'])
+        query = insert(Users).values(**user)
+        result = await session.execute(query)
+        await session.commit()
     
