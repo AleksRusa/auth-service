@@ -1,40 +1,32 @@
-import os
 import logging
 
 
-LOG_DIRS = {
-    "db_logs": "logs/db_logs",
-    "api_logs": "logs/api_logs"
-}
-
-for path in LOG_DIRS.values():
-    os.makedirs(path, exist_ok=True)
-class CustomFormatter(logging.Formatter):
-    def format(self, record):
-        return super().format(record)
-
-formatter = CustomFormatter(
-    "%(asctime)s - %(levelname)s - %(pathname)s:%(lineno)d - %(message)s"
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s",
 )
 
-def setup_logger(name, log_file, level=logging.INFO):
-    """Функция для настройки отдельного логгера"""
-    logger = logging.getLogger(name)
-    logger.setLevel(level)
+logger = logging.getLogger(__name__)
 
-    # Создаём обработчик записи в файл
-    file_handler = logging.FileHandler(log_file)
-    file_handler.setFormatter(formatter)
+# class CustomFormatter(logging.Formatter):
+#     def format(self, record):
+#         return super().format(record)
 
-    # Добавляем обработчик к логгеру
-    logger.addHandler(file_handler)
+# formatter = CustomFormatter(
+#     "%(asctime)s - %(levelname)s - %(pathname)s:%(lineno)d - %(message)s"
+# )
 
-    return logger
+# def setup_logger(name, level=logging.INFO):
+#     """Функция для настройки отдельного логгера с выводом в stdout"""
+#     logger = logging.getLogger(name)
+#     logger.setLevel(level)
 
-# Логгер для БД
-db_logger = setup_logger('db_logger', f"{LOG_DIRS['db_logs']}/db.log")
-db_error_logger = setup_logger('db_error_logger', f"{LOG_DIRS['db_logs']}/errors.log", logging.ERROR)
+#     # Создаём обработчик вывода в stdout
+#     stdout_handler = logging.StreamHandler(sys.stdout)
+#     stdout_handler.setFormatter(formatter)
 
-# Логгер для API
-api_logger = setup_logger('api_logger', f"{LOG_DIRS['api_logs']}/requests.log")
-api_error_logger = setup_logger('api_error_logger', f"{LOG_DIRS['api_logs']}/errors.log", logging.ERROR)
+#     # Добавляем обработчик к логгеру
+#     logger.addHandler(stdout_handler)
+#     return logger
+
+# logger = setup_logger('logger')

@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from sqlalchemy.orm import DeclarativeBase 
 
 from config.config import settings
-from config.logger import db_logger
+from config.logger import logger
 
 class Base(DeclarativeBase):
     pass
@@ -19,12 +19,12 @@ async_session = async_sessionmaker(async_engine, expire_on_commit=False)
 async def create_tables():
     async with async_engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
-        db_logger.info("created tables")
+        logger.info("created tables")
 
 async def delete_tables():
     async with async_engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
-        db_logger.info("dropped tables")
+        logger.info("dropped tables")
 
 async def get_db():
     async with async_session() as session:
